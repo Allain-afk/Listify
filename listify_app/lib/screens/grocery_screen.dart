@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import '../providers/grocery_provider.dart';
+import '../providers/budget_provider.dart';
 import '../models/grocery_item.dart';
 import '../widgets/grocery_item_card.dart';
 import 'add_grocery_screen.dart';
+import 'budget_settings_screen.dart';
 
 class GroceryScreen extends StatefulWidget {
   const GroceryScreen({super.key});
@@ -19,9 +21,10 @@ class _GroceryScreenState extends State<GroceryScreen> {
   @override
   void initState() {
     super.initState();
-    // Load items when screen starts
+    // Load items and budget settings when screen starts
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<GroceryProvider>().loadItems();
+      context.read<BudgetProvider>().loadBudgetSettings();
     });
   }
 
@@ -98,20 +101,7 @@ class _GroceryScreenState extends State<GroceryScreen> {
           ],
         ),
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 4, bottom: 4),
-        child: FloatingActionButton.extended(
-          onPressed: () => _addNewItem(context),
-          icon: const Icon(Icons.add, size: 20),
-          label: Text(
-            'Add Item',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).floatingActionButtonTheme.foregroundColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
+
     );
   }
 
@@ -161,43 +151,64 @@ class _GroceryScreenState extends State<GroceryScreen> {
                 color: Theme.of(context).colorScheme.surface,
                 elevation: 0,
                 offset: const Offset(-8, 8),
-                onSelected: (value) {
-                  switch (value) {
-                    case 'clear_completed':
-                      groceryProvider.clearCompleted();
-                      break;
-                    case 'clear_all':
-                      _showClearAllDialog(context, groceryProvider);
-                      break;
-                    case 'sort_name':
-                      groceryProvider.sortItems('name');
-                      break;
-                    case 'sort_price':
-                      groceryProvider.sortItems('price');
-                      break;
-                    case 'sort_category':
-                      groceryProvider.sortItems('category');
-                      break;
-                  }
-                },
-                itemBuilder: (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'sort_name',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.sort_by_alpha,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Sort by Name',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
+                                           onSelected: (value) {
+                             switch (value) {
+                               case 'budget_settings':
+                                 _openBudgetSettings();
+                                 break;
+                               case 'clear_completed':
+                                 groceryProvider.clearCompleted();
+                                 break;
+                               case 'clear_all':
+                                 _showClearAllDialog(context, groceryProvider);
+                                 break;
+                               case 'sort_name':
+                                 groceryProvider.sortItems('name');
+                                 break;
+                               case 'sort_price':
+                                 groceryProvider.sortItems('price');
+                                 break;
+                               case 'sort_category':
+                                 groceryProvider.sortItems('category');
+                                 break;
+                             }
+                           },
+                                           itemBuilder: (BuildContext context) => [
+                             PopupMenuItem<String>(
+                               value: 'budget_settings',
+                               child: Row(
+                                 children: [
+                                   Icon(
+                                     Icons.account_balance_wallet,
+                                     size: 18,
+                                     color: Theme.of(context).colorScheme.secondary,
+                                   ),
+                                   const SizedBox(width: 12),
+                                   Text(
+                                     'Budget Settings',
+                                     style: Theme.of(context).textTheme.bodyMedium,
+                                   ),
+                                 ],
+                               ),
+                             ),
+                             const PopupMenuDivider(),
+                             PopupMenuItem<String>(
+                               value: 'sort_name',
+                               child: Row(
+                                 children: [
+                                   Icon(
+                                     Icons.sort_by_alpha,
+                                     size: 18,
+                                     color: Theme.of(context).colorScheme.secondary,
+                                   ),
+                                   const SizedBox(width: 12),
+                                   Text(
+                                     'Sort by Name',
+                                     style: Theme.of(context).textTheme.bodyMedium,
+                                   ),
+                                 ],
+                               ),
+                             ),
                   PopupMenuItem<String>(
                     value: 'sort_price',
                     child: Row(
@@ -278,88 +289,115 @@ class _GroceryScreenState extends State<GroceryScreen> {
     );
   }
 
-  Widget _buildStatsSection(GroceryProvider provider) {
-    final stats = provider.getStatistics();
+  Widget _buildStatsSection(GroceryProvider groceryProvider) {
+    final stats = groceryProvider.getStatistics();
     
-    return Container(
-      margin: const EdgeInsets.all(20),
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).cardTheme.color,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Theme.of(context).colorScheme.outline,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Budget Overview
-          Row(
+    return Consumer<BudgetProvider>(
+      builder: (context, budgetProvider, child) {
+        final hasBudget = budgetProvider.hasBudget;
+        final budgetAmount = budgetProvider.budgetAmount;
+        final totalSpent = stats['totalSpent'];
+        final remainingBudget = hasBudget ? budgetAmount - totalSpent : 0.0;
+        final budgetUsage = hasBudget && budgetAmount > 0 
+            ? (totalSpent / budgetAmount).clamp(0.0, 1.0)
+            : 0.0;
+        
+        return Container(
+          margin: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Theme.of(context).cardTheme.color,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
+          child: Column(
             children: [
-              Expanded(
-                child: _buildStatItem(
-                  'Total Budget',
-                  '\$${stats['totalBudget'].toStringAsFixed(2)}',
-                  Icons.account_balance_wallet,
-                  Theme.of(context).colorScheme.primary,
+              // Budget Overview
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatItem(
+                      'Budget',
+                      hasBudget 
+                          ? budgetProvider.formatAmount(budgetAmount)
+                          : 'Not Set',
+                      Icons.account_balance_wallet,
+                      Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: Theme.of(context).colorScheme.outline,
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                  ),
+                  Expanded(
+                    child: _buildStatItem(
+                      'Spent',
+                      budgetProvider.formatAmount(totalSpent),
+                      Icons.shopping_cart,
+                      Colors.green,
+                    ),
+                  ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: Theme.of(context).colorScheme.outline,
+                    margin: const EdgeInsets.symmetric(horizontal: 20),
+                  ),
+                  Expanded(
+                    child: _buildStatItem(
+                      'Remaining',
+                      hasBudget 
+                          ? budgetProvider.formatAmount(remainingBudget)
+                          : '-',
+                      Icons.savings,
+                      hasBudget && remainingBudget < 0 ? Colors.red : Colors.blue,
+                    ),
+                  ),
+                ],
+              ),
+              
+              if (hasBudget) ...[
+                const SizedBox(height: 16),
+                
+                // Progress bar
+                LinearProgressIndicator(
+                  value: budgetUsage,
+                  backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    budgetUsage > 1.0 ? Colors.red : Colors.green,
+                  ),
                 ),
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).colorScheme.outline,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  'Spent',
-                  '\$${stats['totalSpent'].toStringAsFixed(2)}',
-                  Icons.shopping_cart,
-                  Colors.green,
+                
+                const SizedBox(height: 8),
+                
+                Text(
+                  '${(budgetUsage * 100).clamp(0.0, 100.0).toStringAsFixed(1)}% of budget used',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(context).colorScheme.secondary,
+                  ),
                 ),
-              ),
-              Container(
-                width: 1,
-                height: 40,
-                color: Theme.of(context).colorScheme.outline,
-                margin: const EdgeInsets.symmetric(horizontal: 20),
-              ),
-              Expanded(
-                child: _buildStatItem(
-                  'Remaining',
-                  '\$${stats['remainingBudget'].toStringAsFixed(2)}',
-                  Icons.savings,
-                  Colors.blue,
+              ],
+              
+              if (!hasBudget) ...[
+                const SizedBox(height: 16),
+                
+                OutlinedButton.icon(
+                  onPressed: () => _openBudgetSettings(),
+                  icon: const Icon(Icons.settings),
+                  label: const Text('Set Budget'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
-          
-          const SizedBox(height: 16),
-          
-          // Progress bar
-          LinearProgressIndicator(
-            value: stats['totalBudget'] > 0 
-                ? (stats['totalSpent'] / stats['totalBudget']).clamp(0.0, 1.0)
-                : 0.0,
-            backgroundColor: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
-            valueColor: AlwaysStoppedAnimation<Color>(
-              stats['totalSpent'] > stats['totalBudget'] 
-                  ? Colors.red 
-                  : Colors.green,
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          Text(
-            '${((stats['totalSpent'] / stats['totalBudget']) * 100).clamp(0.0, 100.0).toStringAsFixed(1)}% of budget used',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: Theme.of(context).colorScheme.secondary,
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -435,6 +473,15 @@ class _GroceryScreenState extends State<GroceryScreen> {
       context,
       MaterialPageRoute(
         builder: (context) => const AddGroceryScreen(),
+      ),
+    );
+  }
+
+  void _openBudgetSettings() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const BudgetSettingsScreen(),
       ),
     );
   }

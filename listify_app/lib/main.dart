@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'app.dart';
 import 'providers/item_provider.dart';
 import 'providers/grocery_provider.dart';
+import 'providers/budget_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/notification_service.dart';
 
@@ -25,6 +26,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => ItemProvider()),
         ChangeNotifierProvider(create: (_) => GroceryProvider()),
+        ChangeNotifierProvider(create: (_) => BudgetProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],
       child: Consumer<ThemeProvider>(

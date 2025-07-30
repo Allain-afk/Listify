@@ -2,7 +2,7 @@ name: Listify
 description: "A beautiful and efficient todo list app to help you stay organized and productive."
 publish_to: 'none'
 
-version: 1.0.14
+version: 1.1.0
 
 environment:
   sdk: '>=3.1.0 <4.0.0'

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:provider/provider.dart';
 import '../models/grocery_item.dart';
+import '../providers/budget_provider.dart';
 
 class GroceryItemCard extends StatefulWidget {
   final GroceryItem item;
@@ -250,29 +252,33 @@ class _GroceryItemCardState extends State<GroceryItemCard>
                     const SizedBox(width: 12),
                     
                     // Price
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          '\$${widget.item.price.toStringAsFixed(2)}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w600,
-                            color: widget.item.isCompleted
-                                ? Theme.of(context).colorScheme.secondary
-                                : Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        if (widget.item.quantity > 1) ...[
-                          const SizedBox(height: 2),
-                          Text(
-                            'Total: \$${widget.item.totalPrice.toStringAsFixed(2)}',
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: Theme.of(context).colorScheme.secondary,
-                              fontWeight: FontWeight.w500,
+                    Consumer<BudgetProvider>(
+                      builder: (context, budgetProvider, child) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              budgetProvider.formatAmount(widget.item.price),
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                                color: widget.item.isCompleted
+                                    ? Theme.of(context).colorScheme.secondary
+                                    : Theme.of(context).colorScheme.primary,
+                              ),
                             ),
-                          ),
-                        ],
-                      ],
+                            if (widget.item.quantity > 1) ...[
+                              const SizedBox(height: 2),
+                              Text(
+                                'Total: ${budgetProvider.formatAmount(widget.item.totalPrice)}',
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                  color: Theme.of(context).colorScheme.secondary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ],
+                        );
+                      },
                     ),
                     
                     // Menu button

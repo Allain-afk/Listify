@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../models/grocery_item.dart';
 import '../providers/grocery_provider.dart';
+import '../providers/budget_provider.dart';
 
 class AddGroceryScreen extends StatefulWidget {
   final GroceryItem? item;
@@ -164,32 +165,37 @@ class _AddGroceryScreenState extends State<AddGroceryScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: TextFormField(
-                              controller: _priceController,
-                              decoration: InputDecoration(
-                                labelText: 'Price *',
-                                hintText: '0.00',
-                                prefixIcon: Icon(
-                                  Icons.attach_money,
-                                  color: Theme.of(context).colorScheme.primary,
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
-                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                              inputFormatters: [
-                                FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
-                              ],
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter a price';
-                                }
-                                final price = double.tryParse(value);
-                                if (price == null || price < 0) {
-                                  return 'Please enter a valid price';
-                                }
-                                return null;
+                            child: Consumer<BudgetProvider>(
+                              builder: (context, budgetProvider, child) {
+                                return TextFormField(
+                                  controller: _priceController,
+                                  decoration: InputDecoration(
+                                    labelText: 'Price *',
+                                    hintText: '0.00',
+                                    prefixIcon: Icon(
+                                      Icons.attach_money,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
+                                    prefixText: budgetProvider.currencySymbol,
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}')),
+                                  ],
+                                  validator: (value) {
+                                    if (value == null || value.trim().isEmpty) {
+                                      return 'Please enter a price';
+                                    }
+                                    final price = double.tryParse(value);
+                                    if (price == null || price < 0) {
+                                      return 'Please enter a valid price';
+                                    }
+                                    return null;
+                                  },
+                                );
                               },
                             ),
                           ),
