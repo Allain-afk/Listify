@@ -108,51 +108,6 @@ lib/
 - **UI Components**: Custom widgets following Material Design 3
 - **Data Layer**: Repository pattern with model classes
 
-## 🛠️ Dependencies
-
-### Core Dependencies
-- `flutter` - UI framework
-- `provider` - State management
-- `sqflite` - Local SQLite database
-- `google_fonts` - Beautiful typography
-
-### UI & UX
-- `flutter_slidable` - Swipe gestures
-- `intl` - Date formatting
-- `cupertino_icons` - iOS-style icons
-
-### Utilities
-- `uuid` - Unique ID generation
-- `path` - File path utilities
-- `shared_preferences` - Simple key-value storage
-
-## 🎨 Design System
-
-### Color Palette
-- **Primary**: Indigo (#6366F1)
-- **Secondary**: Dynamic based on system
-- **Priority Colors**:
-  - High: Red (#EF4444)
-  - Medium: Orange (#F97316) 
-  - Low: Green (#22C55E)
-
-### Typography
-- **Font**: Inter (via Google Fonts)
-- **Scale**: Material Design 3 type scale
-
-## 📂 Project Structure
-
-```
-listify_app/
-├── android/           # Android-specific files
-├── ios/              # iOS-specific files  
-├── lib/              # Dart source code
-├── assets/           # Images, icons, fonts
-├── test/             # Unit tests
-├── pubspec.yaml      # Dependencies & metadata
-└── README.md         # This file
-```
-
 ## 🧪 Testing
 
 Run tests using:
@@ -189,16 +144,3 @@ flutter build ios --release
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
-
-- Flutter team for the amazing framework
-- Material Design team for design guidelines
-- The open-source community for inspiration
-
-## 📞 Contact
-
-- **Email**: your.email@example.com
-- **GitHub**: [@yourusername](https://github.com/yourusername)
-- **LinkedIn**: [Your Name](https://linkedin.com/in/yourname)
-
----
