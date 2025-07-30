@@ -107,6 +107,7 @@ flutter_*.log
 .env.test
 .env.production
 .metadata
+analysis_options.yaml
 
 # IDE and Editor files
 .vscode/
