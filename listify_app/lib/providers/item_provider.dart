@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/todo_item.dart';
+import '../services/notification_service.dart';
 
 class ItemProvider extends ChangeNotifier {
   List<TodoItem> _items = [];
@@ -25,7 +26,7 @@ class ItemProvider extends ChangeNotifier {
     String path = join(await getDatabasesPath(), 'listify.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2, // Incremented version for schema update
       onCreate: (Database db, int version) async {
         await db.execute('''
           CREATE TABLE items(
@@ -36,9 +37,22 @@ class ItemProvider extends ChangeNotifier {
             priority INTEGER NOT NULL,
             createdAt INTEGER NOT NULL,
             completedAt INTEGER,
-            dueDate INTEGER
+            dueDate INTEGER,
+            notificationTime INTEGER,
+            hasNotification INTEGER NOT NULL DEFAULT 0
           )
         ''');
+      },
+      onUpgrade: (Database db, int oldVersion, int newVersion) async {
+        if (oldVersion < 2) {
+          // Add new notification columns for existing databases
+          await db.execute('''
+            ALTER TABLE items ADD COLUMN notificationTime INTEGER
+          ''');
+          await db.execute('''
+            ALTER TABLE items ADD COLUMN hasNotification INTEGER NOT NULL DEFAULT 0
+          ''');
+        }
       },
     );
   }
@@ -57,8 +71,9 @@ class ItemProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error loading items: $e');
+        print('Error loading items'); // Removed sensitive error details
       }
+      // TODO: Implement proper error logging system
     } finally {
       _setLoading(false);
     }
@@ -71,11 +86,18 @@ class ItemProvider extends ChangeNotifier {
       await db.insert('items', item.toMap());
       
       _items.insert(0, item);
+      
+      // Schedule notification if enabled
+      if (item.hasNotification && item.fullNotificationDateTime != null) {
+        await NotificationService.instance.scheduleNotification(item);
+      }
+      
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error adding item: $e');
+        print('Error adding item'); // Removed sensitive error details
       }
+      // TODO: Implement proper error logging system
     }
   }
 
@@ -92,13 +114,19 @@ class ItemProvider extends ChangeNotifier {
 
       final index = _items.indexWhere((item) => item.id == updatedItem.id);
       if (index != -1) {
+        final oldItem = _items[index];
         _items[index] = updatedItem;
+        
+        // Handle notification scheduling
+        await _handleNotificationUpdate(oldItem, updatedItem);
+        
         notifyListeners();
       }
     } catch (e) {
       if (kDebugMode) {
-        print('Error updating item: $e');
+        print('Error updating item'); // Removed sensitive error details
       }
+      // TODO: Implement proper error logging system
     }
   }
 
@@ -111,6 +139,16 @@ class ItemProvider extends ChangeNotifier {
         isCompleted: !item.isCompleted,
         completedAt: !item.isCompleted ? DateTime.now() : null,
       );
+      
+      // Cancel notification if task is completed
+      if (!item.isCompleted && updatedItem.isCompleted) {
+        await NotificationService.instance.cancelNotification(item.id);
+      }
+      // Reschedule notification if task is uncompleted and has notification
+      else if (item.isCompleted && !updatedItem.isCompleted && updatedItem.hasNotification) {
+        await NotificationService.instance.scheduleNotification(updatedItem);
+      }
+      
       await updateItem(updatedItem);
     }
   }
@@ -125,12 +163,16 @@ class ItemProvider extends ChangeNotifier {
         whereArgs: [id],
       );
 
+      // Cancel any scheduled notification for this item
+      await NotificationService.instance.cancelNotification(id);
+
       _items.removeWhere((item) => item.id == id);
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error deleting item: $e');
+        print('Error deleting item'); // Removed sensitive error details
       }
+      // TODO: Implement proper error logging system
     }
   }
 
@@ -148,8 +190,9 @@ class ItemProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error clearing completed items: $e');
+        print('Error clearing completed items'); // Removed sensitive error details
       }
+      // TODO: Implement proper error logging system
     }
   }
 
@@ -163,8 +206,9 @@ class ItemProvider extends ChangeNotifier {
       notifyListeners();
     } catch (e) {
       if (kDebugMode) {
-        print('Error clearing all items: $e');
+        print('Error clearing all items'); // Removed sensitive error details
       }
+      // TODO: Implement proper error logging system
     }
   }
 
@@ -222,5 +266,20 @@ class ItemProvider extends ChangeNotifier {
       'medium_priority': _items.where((item) => item.priority == Priority.medium).length,
       'low_priority': _items.where((item) => item.priority == Priority.low).length,
     };
+  }
+
+  // Handle notification updates when item is modified
+  Future<void> _handleNotificationUpdate(TodoItem oldItem, TodoItem newItem) async {
+    // Cancel old notification if it existed
+    if (oldItem.hasNotification) {
+      await NotificationService.instance.cancelNotification(oldItem.id);
+    }
+
+    // Schedule new notification if needed and not completed
+    if (newItem.hasNotification && 
+        newItem.fullNotificationDateTime != null && 
+        !newItem.isCompleted) {
+      await NotificationService.instance.scheduleNotification(newItem);
+    }
   }
 }

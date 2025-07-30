@@ -202,5 +202,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **LinkedIn**: [Your Name](https://linkedin.com/in/yourname)
 
 ---
-
-Made with ❤️ and Flutter

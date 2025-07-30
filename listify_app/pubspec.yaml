@@ -1,4 +1,4 @@
-name: Listify
+name: listify_app
 description: "A beautiful and efficient todo list app to help you stay organized and productive."
 publish_to: 'none'
 
@@ -24,14 +24,27 @@ dependencies:
   google_fonts: ^6.1.0
   flutter_slidable: ^3.0.1
   
+  # Notifications
+  flutter_local_notifications: ^17.2.2
+  permission_handler: ^11.3.1
+  timezone: ^0.9.4
+  
   # Utilities
   intl: ^0.19.0
   uuid: ^4.2.1
+  
+  # Charts and Analytics
+  fl_chart: ^0.66.0
+  
+  # File Operations
+  path_provider: ^2.1.1
+  share_plus: ^7.2.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.0
+  sqflite_common_ffi: ^2.3.0
 
 flutter:
   uses-material-design: true

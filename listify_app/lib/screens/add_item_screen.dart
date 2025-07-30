@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../models/todo_item.dart';
 import '../providers/item_provider.dart';
+import '../services/notification_service.dart';
 
 class AddItemScreen extends StatefulWidget {
   final TodoItem? item;
@@ -20,17 +21,31 @@ class _AddItemScreenState extends State<AddItemScreen> {
   
   Priority _selectedPriority = Priority.medium;
   DateTime? _selectedDueDate;
+  DateTime? _selectedNotificationTime;
+  bool _hasNotification = false;
   bool _isLoading = false;
+  bool _notificationsEnabled = false;
 
   @override
   void initState() {
     super.initState();
+    _checkNotificationPermissions();
+    
     if (widget.item != null) {
       _titleController.text = widget.item!.title;
       _descriptionController.text = widget.item!.description;
       _selectedPriority = widget.item!.priority;
       _selectedDueDate = widget.item!.dueDate;
+      _selectedNotificationTime = widget.item!.notificationTime;
+      _hasNotification = widget.item!.hasNotification;
     }
+  }
+
+  Future<void> _checkNotificationPermissions() async {
+    final enabled = await NotificationService.instance.areNotificationsEnabled();
+    setState(() {
+      _notificationsEnabled = enabled;
+    });
   }
 
   @override
@@ -45,19 +60,25 @@ class _AddItemScreenState extends State<AddItemScreen> {
     final isEditing = widget.item != null;
     
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: Theme.of(context).colorScheme.surfaceContainer,
       appBar: AppBar(
         title: Text(isEditing ? 'Edit Task' : 'Add New Task'),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Theme.of(context).colorScheme.surface,
         elevation: 0,
         actions: [
-          TextButton(
-            onPressed: _isLoading ? null : _saveItem,
-            child: Text(
-              isEditing ? 'Update' : 'Save',
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                color: _isLoading ? Colors.grey : Theme.of(context).primaryColor,
+          Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: TextButton(
+              onPressed: _isLoading ? null : _saveItem,
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              child: Text(
+                isEditing ? 'Update' : 'Save',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _isLoading ? Theme.of(context).colorScheme.outline : Theme.of(context).colorScheme.primary,
+                ),
               ),
             ),
           ),
@@ -66,31 +87,47 @@ class _AddItemScreenState extends State<AddItemScreen> {
       body: Form(
         key: _formKey,
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Title Card
               Card(
+                elevation: 0,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Task Details',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.edit_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Task Details',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 20),
                       TextFormField(
                         controller: _titleController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Task Title *',
-                          hintText: 'Enter task title',
-                          prefixIcon: Icon(Icons.title),
-                          border: OutlineInputBorder(),
+                          hintText: 'Enter a descriptive task title',
+                          prefixIcon: Icon(
+                            Icons.title_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -104,11 +141,16 @@ class _AddItemScreenState extends State<AddItemScreen> {
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: const InputDecoration(
+                        decoration: InputDecoration(
                           labelText: 'Description (Optional)',
-                          hintText: 'Enter task description',
-                          prefixIcon: Icon(Icons.description),
-                          border: OutlineInputBorder(),
+                          hintText: 'Add more details about your task',
+                          prefixIcon: Icon(
+                            Icons.description_outlined,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                         maxLines: 3,
                         maxLength: 500,
@@ -119,20 +161,31 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 ),
               ),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               
               // Priority Card
               Card(
+                elevation: 0,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Priority Level',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.flag_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Priority Level',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -145,7 +198,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                               Icons.keyboard_arrow_down,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: _buildPriorityChip(
                               Priority.medium,
@@ -154,7 +207,7 @@ class _AddItemScreenState extends State<AddItemScreen> {
                               Icons.remove,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: _buildPriorityChip(
                               Priority.high,
@@ -170,20 +223,31 @@ class _AddItemScreenState extends State<AddItemScreen> {
                 ),
               ),
               
-              const SizedBox(height: 16),
+              const SizedBox(height: 20),
               
               // Due Date Card
               Card(
+                elevation: 0,
                 child: Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(20.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Due Date (Optional)',
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.schedule_outlined,
+                            size: 20,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Due Date (Optional)',
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 16),
                       Row(
@@ -191,21 +255,33 @@ class _AddItemScreenState extends State<AddItemScreen> {
                           Expanded(
                             child: InkWell(
                               onTap: _selectDueDate,
+                              borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  border: Border.all(color: Colors.grey.shade300),
-                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: Theme.of(context).colorScheme.outline,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                  color: Theme.of(context).colorScheme.surface,
                                 ),
                                 child: Row(
                                   children: [
-                                    const Icon(Icons.calendar_today),
+                                    Icon(
+                                      Icons.calendar_today_outlined,
+                                      color: Theme.of(context).colorScheme.primary,
+                                    ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
                                         _selectedDueDate == null
                                             ? 'Select due date'
-                                            : DateFormat('MMM dd, yyyy').format(_selectedDueDate!),
+                                            : DateFormat('EEEE, MMM dd, yyyy').format(_selectedDueDate!),
+                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                          color: _selectedDueDate == null 
+                                              ? Theme.of(context).colorScheme.outline
+                                              : Theme.of(context).colorScheme.onSurface,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -214,14 +290,24 @@ class _AddItemScreenState extends State<AddItemScreen> {
                             ),
                           ),
                           if (_selectedDueDate != null) ...[
-                            const SizedBox(width: 8),
+                            const SizedBox(width: 12),
                             IconButton(
                               onPressed: () {
                                 setState(() {
                                   _selectedDueDate = null;
+                                  _hasNotification = false;
+                                  _selectedNotificationTime = null;
                                 });
                               },
-                              icon: const Icon(Icons.clear),
+                              icon: Icon(
+                                Icons.clear,
+                                color: Theme.of(context).colorScheme.error,
+                              ),
+                              style: IconButton.styleFrom(
+                                backgroundColor: Theme.of(context).colorScheme.errorContainer,
+                                foregroundColor: Theme.of(context).colorScheme.error,
+                                padding: const EdgeInsets.all(8),
+                              ),
                             ),
                           ],
                         ],
@@ -230,6 +316,142 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   ),
                 ),
               ),
+              
+              // Notification Card
+              if (_selectedDueDate != null) ...[
+                const SizedBox(height: 20),
+                Card(
+                  elevation: 0,
+                  child: Padding(
+                    padding: const EdgeInsets.all(20.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.notifications_outlined,
+                              size: 20,
+                              color: Theme.of(context).colorScheme.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Notification Reminder',
+                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        
+                        // Notification Permission Check
+                        if (!_notificationsEnabled) ...[
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.errorContainer,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.warning_outlined,
+                                  color: Theme.of(context).colorScheme.error,
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Notifications are disabled. Enable them to set reminders.',
+                                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: Theme.of(context).colorScheme.error,
+                                    ),
+                                  ),
+                                ),
+                                TextButton(
+                                  onPressed: _requestNotificationPermissions,
+                                  child: Text(
+                                    'Enable',
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.error,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        
+                        // Notification Toggle
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                'Remind me on the due date',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ),
+                            Switch(
+                              value: _hasNotification && _notificationsEnabled,
+                              onChanged: _notificationsEnabled ? (value) {
+                                setState(() {
+                                  _hasNotification = value;
+                                  if (!value) {
+                                    _selectedNotificationTime = null;
+                                  }
+                                });
+                              } : null,
+                            ),
+                          ],
+                        ),
+                        
+                        // Time Selection
+                        if (_hasNotification && _notificationsEnabled) ...[
+                          const SizedBox(height: 16),
+                          InkWell(
+                            onTap: _selectNotificationTime,
+                            borderRadius: BorderRadius.circular(12),
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                border: Border.all(
+                                  color: Theme.of(context).colorScheme.outline,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                                color: Theme.of(context).colorScheme.surface,
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.access_time_outlined,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      _selectedNotificationTime == null
+                                          ? 'Select notification time'
+                                          : 'Remind me at ${DateFormat('h:mm a').format(_selectedNotificationTime!)}',
+                                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                        color: _selectedNotificationTime == null 
+                                            ? Theme.of(context).colorScheme.outline
+                                            : Theme.of(context).colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ),
+              ],
               
               const SizedBox(height: 32),
               
@@ -240,14 +462,19 @@ class _AddItemScreenState extends State<AddItemScreen> {
                   onPressed: _isLoading ? null : _saveItem,
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: _isLoading
-                      ? const SizedBox(
+                      ? SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.onPrimary,
+                            ),
                           ),
                         )
                       : Text(
@@ -275,29 +502,39 @@ class _AddItemScreenState extends State<AddItemScreen> {
           _selectedPriority = priority;
         });
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
         decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.1) : Colors.grey.shade100,
+          color: isSelected 
+              ? color.withValues(alpha: 0.1) 
+              : Theme.of(context).colorScheme.surface,
           border: Border.all(
-            color: isSelected ? color : Colors.grey.shade300,
+            color: isSelected 
+                ? color 
+                : Theme.of(context).colorScheme.outline,
             width: isSelected ? 2 : 1,
           ),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
           children: [
             Icon(
               icon,
-              color: isSelected ? color : Colors.grey.shade600,
+              color: isSelected 
+                  ? color 
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+              size: 24,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? color : Colors.grey.shade700,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-                fontSize: 12,
+                color: isSelected 
+                    ? color 
+                    : Theme.of(context).colorScheme.onSurfaceVariant,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                fontSize: 13,
               ),
             ),
           ],
@@ -317,12 +554,68 @@ class _AddItemScreenState extends State<AddItemScreen> {
     if (picked != null && picked != _selectedDueDate) {
       setState(() {
         _selectedDueDate = picked;
+        _hasNotification = false; // Reset notification if due date changes
+        _selectedNotificationTime = null;
       });
+    }
+  }
+
+  Future<void> _selectNotificationTime() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedNotificationTime != null 
+          ? TimeOfDay.fromDateTime(_selectedNotificationTime!)
+          : TimeOfDay.now(),
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedNotificationTime = DateTime(
+          2023, 1, 1, // Dummy date, only time matters
+          picked.hour,
+          picked.minute,
+        );
+      });
+    }
+  }
+
+  Future<void> _requestNotificationPermissions() async {
+    final granted = await NotificationService.instance.requestPermissions();
+    if (!mounted) return;
+    
+    if (granted) {
+      setState(() {
+        _notificationsEnabled = true;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Notifications enabled!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to enable notifications. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
   Future<void> _saveItem() async {
     if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    // Validate notification setup
+    if (_hasNotification && _selectedNotificationTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a notification time.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
       return;
     }
 
@@ -340,6 +633,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
           description: _descriptionController.text.trim(),
           priority: _selectedPriority,
           dueDate: _selectedDueDate,
+          hasNotification: _hasNotification,
+          notificationTime: _selectedNotificationTime,
         );
         await itemProvider.updateItem(updatedItem);
       } else {
@@ -349,6 +644,8 @@ class _AddItemScreenState extends State<AddItemScreen> {
           description: _descriptionController.text.trim(),
           priority: _selectedPriority,
           dueDate: _selectedDueDate,
+          hasNotification: _hasNotification,
+          notificationTime: _selectedNotificationTime,
         );
         await itemProvider.addItem(newItem);
       }

@@ -1,109 +1,108 @@
 import 'package:flutter/material.dart';
 
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key});
+  final VoidCallback? onAddTask;
+  
+  const EmptyState({super.key, this.onAddTask});
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(32.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Illustration
             Container(
-              width: 120,
-              height: 120,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).primaryColor.withOpacity(0.1),
+                color: Theme.of(context).colorScheme.secondary.withValues(alpha: 0.1),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                  width: 1,
+                ),
               ),
               child: Icon(
-                Icons.checklist_rtl,
-                size: 60,
-                color: Theme.of(context).primaryColor.withOpacity(0.7),
+                Icons.checklist,
+                size: 32,
+                color: Theme.of(context).colorScheme.secondary,
               ),
             ),
             
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             
             // Main message
             Text(
-              'No tasks yet!',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              'No tasks yet',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                 fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
               ),
             ),
             
-            const SizedBox(height: 16),
+            const SizedBox(height: 8),
             
             // Subtitle
             Text(
-              'Your task list is empty. Tap the button below to add your first task and start being productive!',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey.shade600,
-              ),
+              'Create your first task to get started',
+              style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
+            ),
+            
+            const SizedBox(height: 24),
+            
+            // Call to action button
+            Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(maxWidth: 200),
+              child: ElevatedButton.icon(
+                onPressed: onAddTask,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Add your first task'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+              ),
             ),
             
             const SizedBox(height: 32),
             
-            // Call to action
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.add_circle_outline,
-                  color: Theme.of(context).primaryColor,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  'Tap the "Add Task" button to get started',
-                  style: TextStyle(
-                    color: Theme.of(context).primaryColor,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 40),
-            
             // Tips section
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.blue.shade100),
+                color: Theme.of(context).cardTheme.color,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: Theme.of(context).colorScheme.outline,
+                ),
               ),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
                       Icon(
                         Icons.lightbulb_outline,
-                        color: Colors.blue.shade600,
-                        size: 20,
+                        color: Theme.of(context).colorScheme.secondary,
+                        size: 16,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'Quick Tips',
-                        style: TextStyle(
+                        'Quick tips',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                           fontWeight: FontWeight.w600,
-                          color: Colors.blue.shade700,
                         ),
                       ),
                     ],
                   ),
                   const SizedBox(height: 12),
-                  _buildTip('Set priorities to focus on what matters most'),
-                  _buildTip('Add due dates to stay on track'),
-                  _buildTip('Swipe left on tasks to delete them'),
-                  _buildTip('Tap on tasks to edit them'),
+                  _buildTip(context, 'Set priorities to focus on important tasks'),
+                  _buildTip(context, 'Add due dates to stay on schedule'),
+                  _buildTip(context, 'Swipe left on tasks to delete them'),
+                  _buildTip(context, 'Tap on tasks to edit them'),
                 ],
               ),
             ),
@@ -113,7 +112,7 @@ class EmptyState extends StatelessWidget {
     );
   }
 
-  Widget _buildTip(String text) {
+  Widget _buildTip(BuildContext context, String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -122,19 +121,16 @@ class EmptyState extends StatelessWidget {
           Container(
             width: 4,
             height: 4,
-            margin: const EdgeInsets.only(top: 8, right: 8),
+            margin: const EdgeInsets.only(top: 6, right: 8),
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: Colors.blue.shade400,
+              color: Theme.of(context).colorScheme.secondary,
             ),
           ),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.blue.shade700,
-              ),
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ),
         ],
