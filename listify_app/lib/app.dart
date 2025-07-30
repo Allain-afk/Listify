@@ -2,11 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'providers/item_provider.dart';
+import 'providers/grocery_provider.dart';
 import 'providers/theme_provider.dart';
 import 'models/todo_item.dart';
 import 'screens/add_item_screen.dart';
+import 'screens/add_grocery_screen.dart';
 import 'screens/task_details_screen.dart';
 import 'screens/widget_bar_screen.dart';
+import 'screens/grocery_screen.dart';
 import 'widgets/todo_item_card.dart';
 import 'widgets/empty_state.dart';
 
@@ -109,6 +112,9 @@ class _ListifyAppState extends State<ListifyApp> {
               ],
             ),
             
+            // Grocery Screen
+            const GroceryScreen(),
+            
             // Widget Bar Screen
             const WidgetBarScreen(),
           ],
@@ -132,25 +138,33 @@ class _ListifyAppState extends State<ListifyApp> {
             label: 'Tasks',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.shopping_cart),
+            label: 'Grocery',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
             label: 'Widget Bar',
           ),
         ],
       ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(right: 4, bottom: 4),
-        child: FloatingActionButton.extended(
-          onPressed: () => _addNewItem(context),
-          icon: const Icon(Icons.add, size: 20),
-          label: Text(
-            'Add Task',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: Theme.of(context).floatingActionButtonTheme.foregroundColor,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ),
-      ),
+      floatingActionButton: _currentIndex == 0 || _currentIndex == 1
+          ? Padding(
+              padding: const EdgeInsets.only(right: 4, bottom: 4),
+              child: FloatingActionButton.extended(
+                onPressed: () => _currentIndex == 0 
+                    ? _addNewItem(context) 
+                    : _addNewGroceryItem(context),
+                icon: const Icon(Icons.add, size: 20),
+                label: Text(
+                  _currentIndex == 0 ? 'Add Task' : 'Add Item',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context).floatingActionButtonTheme.foregroundColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            )
+          : null,
     );
   }
 
@@ -169,121 +183,272 @@ class _ListifyAppState extends State<ListifyApp> {
       child: Row(
         children: [
           Text(
-            'Listify',
+            _currentIndex == 0 ? 'Listify' : _currentIndex == 1 ? 'Grocery List' : 'Widget Bar',
             style: Theme.of(context).textTheme.headlineMedium,
           ),
           const Spacer(),
-          Consumer2<ItemProvider, ThemeProvider>(
-            builder: (context, itemProvider, themeProvider, child) {
-              return PopupMenuButton<String>(
-                icon: Icon(
-                  Icons.more_vert,
-                  color: Theme.of(context).colorScheme.secondary,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(
-                    color: Theme.of(context).colorScheme.outline,
-                  ),
-                ),
-                color: Theme.of(context).colorScheme.surface,
-                elevation: 0,
-                offset: const Offset(-8, 8),
-                onSelected: (value) {
-                  switch (value) {
-                    case 'widget_bar':
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const WidgetBarScreen(),
+          _currentIndex == 0 
+              ? Consumer2<ItemProvider, ThemeProvider>(
+                  builder: (context, itemProvider, themeProvider, child) {
+                    return PopupMenuButton<String>(
+                      icon: Icon(
+                        Icons.more_vert,
+                        color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outline,
                         ),
-                      );
-                      break;
-                    case 'theme':
-                      themeProvider.toggleTheme();
-                      break;
-                    case 'clear_completed':
-                      itemProvider.clearCompleted();
-                      break;
-                    case 'clear_all':
-                      _showClearAllDialog(context, itemProvider);
-                      break;
-                  }
-                },
-                itemBuilder: (BuildContext context) => [
-                  PopupMenuItem<String>(
-                    value: 'widget_bar',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.dashboard,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.secondary,
+                      ),
+                      color: Theme.of(context).colorScheme.surface,
+                      elevation: 0,
+                      offset: const Offset(-8, 8),
+                      onSelected: (value) {
+                        switch (value) {
+                          case 'theme':
+                            themeProvider.toggleTheme();
+                            break;
+                          case 'clear_completed':
+                            itemProvider.clearCompleted();
+                            break;
+                          case 'clear_all':
+                            _showClearAllDialog(context, itemProvider);
+                            break;
+                        }
+                      },
+                      itemBuilder: (BuildContext context) => [
+                        PopupMenuItem<String>(
+                          value: 'theme',
+                          child: Row(
+                            children: [
+                              Icon(
+                                themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Theme: ${themeProvider.themeModeString}',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Widget Bar',
-                          style: Theme.of(context).textTheme.bodyMedium,
+                        PopupMenuItem<String>(
+                          value: 'clear_completed',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                size: 18,
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Clear Completed',
+                                style: Theme.of(context).textTheme.bodyMedium,
+                              ),
+                            ],
+                          ),
                         ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'theme',
-                    child: Row(
-                      children: [
-                        Icon(
-                          themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Theme: ${themeProvider.themeModeString}',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'clear_completed',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.check_circle_outline,
-                          size: 18,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Clear Completed',
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ],
-                    ),
-                  ),
-                  PopupMenuItem<String>(
-                    value: 'clear_all',
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.delete_outline,
-                          size: 18,
-                          color: Colors.red.shade500,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Clear All',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: Colors.red.shade500,
+                        PopupMenuItem<String>(
+                          value: 'clear_all',
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.delete_outline,
+                                size: 18,
+                                color: Colors.red.shade500,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(
+                                'Clear All',
+                                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                  color: Colors.red.shade500,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
+                    );
+                  },
+                )
+              : _currentIndex == 1
+                  ? Consumer<GroceryProvider>(
+                      builder: (context, groceryProvider, child) {
+                        return PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                          color: Theme.of(context).colorScheme.surface,
+                          elevation: 0,
+                          offset: const Offset(-8, 8),
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'clear_completed':
+                                groceryProvider.clearCompleted();
+                                break;
+                              case 'clear_all':
+                                _showClearAllGroceryDialog(context, groceryProvider);
+                                break;
+                              case 'sort_name':
+                                groceryProvider.sortItems('name');
+                                break;
+                              case 'sort_price':
+                                groceryProvider.sortItems('price');
+                                break;
+                              case 'sort_category':
+                                groceryProvider.sortItems('category');
+                                break;
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            PopupMenuItem<String>(
+                              value: 'sort_name',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.sort_by_alpha,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Sort by Name',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'sort_price',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.attach_money,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Sort by Price',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'sort_category',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.category,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Sort by Category',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuDivider(),
+                            PopupMenuItem<String>(
+                              value: 'clear_completed',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.check_circle_outline,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Clear Completed',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            PopupMenuItem<String>(
+                              value: 'clear_all',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    Icons.delete_outline,
+                                    size: 18,
+                                    color: Colors.red.shade500,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Clear All',
+                                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                                      color: Colors.red.shade500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
+                    )
+                  : Consumer<ThemeProvider>(
+                      builder: (context, themeProvider, child) {
+                        return PopupMenuButton<String>(
+                          icon: Icon(
+                            Icons.more_vert,
+                            color: Theme.of(context).colorScheme.secondary,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: Theme.of(context).colorScheme.outline,
+                            ),
+                          ),
+                          color: Theme.of(context).colorScheme.surface,
+                          elevation: 0,
+                          offset: const Offset(-8, 8),
+                          onSelected: (value) {
+                            switch (value) {
+                              case 'theme':
+                                themeProvider.toggleTheme();
+                                break;
+                            }
+                          },
+                          itemBuilder: (BuildContext context) => [
+                            PopupMenuItem<String>(
+                              value: 'theme',
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    themeProvider.isDarkMode ? Icons.light_mode : Icons.dark_mode,
+                                    size: 18,
+                                    color: Theme.of(context).colorScheme.secondary,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Text(
+                                    'Theme: ${themeProvider.themeModeString}',
+                                    style: Theme.of(context).textTheme.bodyMedium,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        );
+                      },
                     ),
-                  ),
-                ],
-              );
-            },
-          ),
         ],
       ),
     );
@@ -367,6 +532,15 @@ class _ListifyAppState extends State<ListifyApp> {
       context,
       MaterialPageRoute(
         builder: (context) => const AddItemScreen(),
+      ),
+    );
+  }
+
+  void _addNewGroceryItem(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddGroceryScreen(),
       ),
     );
   }
@@ -459,6 +633,51 @@ class _ListifyAppState extends State<ListifyApp> {
           ),
           content: Text(
             'Are you sure you want to delete all tasks? This action cannot be undone.',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.secondary,
+              ),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                provider.clearAll();
+                Navigator.of(context).pop();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red.shade500,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Clear All'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showClearAllGroceryDialog(BuildContext context, GroceryProvider provider) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Theme.of(context).cardTheme.color,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.outline,
+            ),
+          ),
+          title: Text(
+            'Clear All Items',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          content: Text(
+            'Are you sure you want to delete all grocery items? This action cannot be undone.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           actions: [

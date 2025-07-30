@@ -1,8 +1,8 @@
-name: listify_app
+name: Listify
 description: "A beautiful and efficient todo list app to help you stay organized and productive."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.14
 
 environment:
   sdk: '>=3.1.0 <4.0.0'
@@ -52,10 +52,3 @@ flutter:
   assets:
     - assets/images/
     - assets/icons/
-
-  # fonts:
-  #   - family: Roboto
-  #     fonts:
-  #       - asset: fonts/Roboto-Regular.ttf
-  #       - asset: fonts/Roboto-Bold.ttf
-  #         weight: 700
